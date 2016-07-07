@@ -6,7 +6,7 @@ let APP = {
   transcript: "",
   newWordFrequency: 1, // in seconds
   lastTimeStamp: 0,
-  drunkeness: .009 // 0-1, reflects confidence of word recognizer
+  drunkeness: .8 // 0-1, reflects confidence of word recognizer
 }
 
 const updateWord = (word) => {
@@ -41,8 +41,8 @@ const updateWord = (word) => {
   });
 };
 
-const chooseWord = () => {
-  let word = APP.transcript.split(' ').pop();
+const chooseWord = (phrase) => {
+  let word = phrase.split(' ').pop();
   if (word !== APP.currentWord) {
     APP.currentWord = word;
     updateWord(word);
@@ -68,7 +68,7 @@ const initSpeechRecognition = () => {
       }
 
       // If the transcript actually grew, continue
-      if (APP.transcript.length < interim_transcript.length) {
+      // if (APP.transcript.length < interim_transcript.length) {
         APP.transcript = interim_transcript;
         let phrase = event.results[event.resultIndex][0];
         console.log(phrase.transcript, phrase.confidence);
@@ -77,9 +77,9 @@ const initSpeechRecognition = () => {
           && (event.timeStamp - APP.lastTimeStamp) > (APP.newWordFrequency * 1000)
         ) {
           APP.lastTimeStamp = event.timeStamp;
-          chooseWord();
+          chooseWord(phrase.transcript);
         }
-      }
+      // }
 
     }
 
