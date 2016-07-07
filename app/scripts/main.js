@@ -1,3 +1,17 @@
+let APP = {
+  currentWord: "",
+  newWordFrequency: 1, // in seconds
+  readyForNewWord: true
+}
+
+const waitBeforeNewWord = (freqInSeconds) => {
+  // Prevent a new word from being added for newWordFrequency seconds
+  APP.readyForNewWord = false;
+  window.setTimeout(function() {
+    APP.readyForNewWord = true;
+  }, freqInSeconds * 1000)
+}
+
 const getImageFromAPI = (term) => {
   $.getJSON('https://pixabay.com/api/',
   {
@@ -11,25 +25,67 @@ const getImageFromAPI = (term) => {
   });
 }
 
-const updateWord = (word) => {
+const updateScreen = (word) => {
   $('#word').text(word);
 }
 
-const getLastWord = (chunk) => {
-  const lastWord = chunk.slice(chunk.lastIndexOf(" ") + 1);
-  getImageFromAPI(lastWord);
-  updateWord(lastWord)
+const isConfident = (confidence) => {
+  // console.log(transcript);
+  if (
+    APP.readyForNewWord
+    && confidence > .01
+  ) {
+    return true
+  }
+  return false
 }
 
-if (annyang) {
-  // Let's define a command.
-  var commands = {
-    '*chunk': getLastWord
-  };
+const updateWord = (transcript) => {
+  let words = transcript.split(' ');
 
-  // Add our commands to annyang
-  annyang.addCommands(commands);
+  // Strip out words shorter than two characters
+  words = words.map(function(curr) {
+    if (curr.length > 2 && curr !== APP.currentWord) {
+      return curr
+    }
+  });
 
-  // Start listening.
-  annyang.start();
+  // Choose randomly
+  let randomWord = words[Math.floor(Math.random() * words.length)];
+  APP.currentWord = randomWord;
+  getImageFromAPI(randomWord);
+  updateScreen(randomWord);
+  waitBeforeNewWord(APP.newWordFrequency);
 }
+
+const initSpeechRecognition = () => {
+  // Check if Speech Recognition API is available
+  if (!('webkitSpeechRecognition' in window)) {
+    alert('Your browser does not support speech recognition. I would recommoned using the latest version of Google Chrome.');
+    upgrade();
+  } else {
+    let recognition = new webkitSpeechRecognition;
+    recognition.continuous = false; // Do not end stream
+    recognition.interimResults = true; // Speeds up results
+
+    // Called for every new grok of speech (determined by pauses)
+
+    // resultIndex gets bumped every time isFinal becomes true
+    recognition.onresult = function(event) {
+      console.log(event)
+      let phrase = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        phrase += event.results[i][0].transcript;
+        // console.log(i, phrase);
+        if (isConfident(event.results[i][0].confidence)) {
+          updateWord(phrase.transcript);
+        }
+      }
+    }
+
+    recognition.lang = 'en-US';
+    recognition.start();
+  }
+}
+
+initSpeechRecognition();
