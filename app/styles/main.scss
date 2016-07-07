@@ -1,8 +1,17 @@
 // bower:scss
 // endbower
+html, body {
+  height: 100%;
+}
+
 body {
+  background-color: #000;
   background-repeat: no-repeat;
   background-size: cover;
+  background-position: center;
+  -webkit-transition: 0.4s ease-in-out;
+  transition: 0.4s ease-in-out;
+  margin: 0;
 }
 
 #img-preloader {
@@ -19,4 +28,6 @@ body {
   font-family: helvetica, arial, sans-serif;
   font-weight: bold;
   text-shadow: 2px 2px 12px #000;
+  -webkit-transition: 0.4s ease-in-out;
+  transition: 0.4s ease-in-out;
 }

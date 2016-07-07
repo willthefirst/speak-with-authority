@@ -1,10 +1,12 @@
 // todo: credit pixabay
 // protect api key
+// UI controls
+// prompt to allow talking...
+// refactor
 
 let APP = {
   currentWord: "",
-  transcript: "",
-  newWordFrequency: 1, // in seconds
+  newWordFrequency: 2, // in seconds
   lastTimeStamp: 0,
   drunkeness: .8 // 0-1, reflects confidence of word recognizer
 }
@@ -24,8 +26,6 @@ const updateWord = (word) => {
       return
     }
 
-    // Preload image to avoid slow loading of pics
-    const imgUrl = data.hits[0].webformatURL;
     // Load new text
     $('#word').text(word);
     // Position text
@@ -33,6 +33,9 @@ const updateWord = (word) => {
       top: Math.random() * ($(document).height() - 200),
       left: Math.random() * ($(document).width() - $('#word').width()),
     });
+
+    // Preload image to avoid slow loading of pics
+    const imgUrl = data.hits[0].webformatURL;
 
     $("#img-preloader").attr('src', imgUrl).on('load', () => {
       // Load bg
@@ -43,7 +46,7 @@ const updateWord = (word) => {
 
 const chooseWord = (phrase) => {
   let word = phrase.split(' ').pop();
-  if (word !== APP.currentWord) {
+  if (word !== APP.currentWord && word.length > 3) {
     APP.currentWord = word;
     updateWord(word);
   }
@@ -62,28 +65,15 @@ const initSpeechRecognition = () => {
     recognition.start();
 
     recognition.onresult = function(event) {
-      let interim_transcript = "";
-      for (var i = 0; i < event.results.length; ++i) {
-          interim_transcript += event.results[i][0].transcript;
+      let phrase = event.results[event.resultIndex][0];
+      if (
+        phrase.confidence > APP.drunkeness
+        && (event.timeStamp - APP.lastTimeStamp) > (APP.newWordFrequency * 1000)
+      ) {
+        APP.lastTimeStamp = event.timeStamp;
+        chooseWord(phrase.transcript);
       }
-
-      // If the transcript actually grew, continue
-      // if (APP.transcript.length < interim_transcript.length) {
-        APP.transcript = interim_transcript;
-        let phrase = event.results[event.resultIndex][0];
-        console.log(phrase.transcript, phrase.confidence);
-        if (
-          phrase.confidence > APP.drunkeness
-          && (event.timeStamp - APP.lastTimeStamp) > (APP.newWordFrequency * 1000)
-        ) {
-          APP.lastTimeStamp = event.timeStamp;
-          chooseWord(phrase.transcript);
-        }
-      // }
-
     }
-
-
   }
 }
 
