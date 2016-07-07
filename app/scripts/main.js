@@ -1,6 +1,9 @@
+// todo: credit pixabay
+// protect api key
+
 let APP = {
   currentWord: "",
-  newWordFrequency: 1, // in seconds
+  newWordFrequency: 3, // in seconds
   readyForNewWord: true
 }
 
@@ -12,7 +15,7 @@ const waitBeforeNewWord = (freqInSeconds) => {
   }, freqInSeconds * 1000)
 }
 
-const updateScreen = (word) => {
+const updateWord = (word) => {
   // Load new image
   $.getJSON('https://pixabay.com/api/',
   {
@@ -21,8 +24,18 @@ const updateScreen = (word) => {
     per_page: 3,
   },
   (data) =>  {
-    const imgUrl = data.hits[0].webformatURL;
+    // Break when the API comes back empty
+    if (data.totalHits === 0) {
+      console.warn(`Couldn't find an image for '${word}'.`);
+      return
+    }
+
+    // Update current work in app, restart frequency timer
+    APP.currentWord = word;
+    waitBeforeNewWord(APP.newWordFrequency);
+
     // Preload image to avoid slow loading of pics
+    const imgUrl = data.hits[0].webformatURL;
     $("#img-preloader").attr('src', imgUrl).on('load', () => {
       // Load bg
       $('body').css('background-image', 'url(' + imgUrl + ')');
@@ -34,35 +47,26 @@ const updateScreen = (word) => {
         left: Math.random() * ($(document).width() - $('#word').width()),
       });
     });
+  }).fail((e) => {
+    console.log(e.statusText, e.statusCode());
   })
 };
 
-const isConfident = (confidence) => {
-  // console.log(transcript);
-  if (
-    APP.readyForNewWord
-    && confidence > .01
-  ) {
-    return true
-  }
-  return false
-};
-
-const updateWord = (transcript) => {
-  let words = transcript.split(' ');
-
+const chooseWord = (transcript) => {
   // Strip out words shorter than two characters
-  words = words.map(function(curr) {
-    if (curr.length > 2 && curr !== APP.currentWord) {
-      return curr
+  let words = [];
+  transcript.split(' ').forEach(function(word) {
+    if (word.length > 2 && word != APP.currentWord) {
+      words.push(word)
     }
   });
 
-  // Choose randomly
-  let randomWord = words[Math.floor(Math.random() * words.length)];
-  APP.currentWord = randomWord;
-  updateScreen(randomWord);
-  waitBeforeNewWord(APP.newWordFrequency);
+  // If we have a useful collection of words, choose one randomly
+  if (words.length) {
+    let randomWord = words[Math.floor(Math.random() * words.length)];
+    console.log('Chosen', randomWord);
+    updateWord(randomWord);
+  }
 }
 
 const initSpeechRecognition = () => {
@@ -72,26 +76,20 @@ const initSpeechRecognition = () => {
     upgrade();
   } else {
     let recognition = new webkitSpeechRecognition;
-    recognition.continuous = false; // Do not end stream
+    recognition.continuous = true; // Do not end stream
     recognition.interimResults = true; // Speeds up results
+    recognition.lang = 'en-US';
+    recognition.start();
 
-    // Called for every new grok of speech (determined by pauses)
-
-    // resultIndex gets bumped every time isFinal becomes true
     recognition.onresult = function(event) {
-      console.log(event)
       let phrase = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        phrase += event.results[i][0].transcript;
-        // console.log(i, phrase);
-        if (isConfident(event.results[i][0].confidence)) {
-          updateWord(phrase.transcript);
-        }
+      phrase = event.results[event.resultIndex][0];
+      if (APP.readyForNewWord && phrase.confidence > .5) {
+        chooseWord(phrase.transcript);
       }
     }
 
-    recognition.lang = 'en-US';
-    recognition.start();
+
   }
 }
 
