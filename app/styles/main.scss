@@ -11,9 +11,12 @@ body {
 
 #word {
   font-size: 200px;
-  margin-left: 40px;
+  position: absolute;
+  top: 200px;
+  left: 12px;
+  margin: auto;
   color: #fff;
-  font-family: arial, sans-serif;
+  font-family: helvetica, arial, sans-serif;
   font-weight: bold;
-  text-shadow: 2px 2px 8px #000;
+  text-shadow: 2px 2px 12px #000;
 }

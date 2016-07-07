@@ -28,10 +28,14 @@ const updateScreen = (word) => {
       $('body').css('background-image', 'url(' + imgUrl + ')');
       // Load new text
       $('#word').text(word);
+      // Position text
+      $('#word').css({
+        top: Math.random() * ($(document).height() - 200),
+        left: Math.random() * ($(document).width() - $('#word').width()),
+      });
     });
   })
-}
-
+};
 
 const isConfident = (confidence) => {
   // console.log(transcript);
@@ -42,7 +46,7 @@ const isConfident = (confidence) => {
     return true
   }
   return false
-}
+};
 
 const updateWord = (transcript) => {
   let words = transcript.split(' ');
