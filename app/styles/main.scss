@@ -1,2 +1,15 @@
 // bower:scss
 // endbower
+body {
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+#word {
+  font-size: 200px;
+  margin-left: 40px;
+  color: #fff;
+  font-family: arial, sans-serif;
+  font-weight: bold;
+  text-shadow: 2px 2px 8px #000;
+}
