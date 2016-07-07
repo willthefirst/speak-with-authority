@@ -3,16 +3,10 @@
 
 let APP = {
   currentWord: "",
-  newWordFrequency: 3, // in seconds
-  readyForNewWord: true
-}
-
-const waitBeforeNewWord = (freqInSeconds) => {
-  // Prevent a new word from being added for newWordFrequency seconds
-  APP.readyForNewWord = false;
-  window.setTimeout(function() {
-    APP.readyForNewWord = true;
-  }, freqInSeconds * 1000)
+  transcript: "",
+  newWordFrequency: 1, // in seconds
+  lastTimeStamp: 0,
+  drunkeness: .009 // 0-1, reflects confidence of word recognizer
 }
 
 const updateWord = (word) => {
@@ -30,42 +24,28 @@ const updateWord = (word) => {
       return
     }
 
-    // Update current work in app, restart frequency timer
-    APP.currentWord = word;
-    waitBeforeNewWord(APP.newWordFrequency);
-
     // Preload image to avoid slow loading of pics
     const imgUrl = data.hits[0].webformatURL;
+    // Load new text
+    $('#word').text(word);
+    // Position text
+    $('#word').css({
+      top: Math.random() * ($(document).height() - 200),
+      left: Math.random() * ($(document).width() - $('#word').width()),
+    });
+
     $("#img-preloader").attr('src', imgUrl).on('load', () => {
       // Load bg
       $('body').css('background-image', 'url(' + imgUrl + ')');
-      // Load new text
-      $('#word').text(word);
-      // Position text
-      $('#word').css({
-        top: Math.random() * ($(document).height() - 200),
-        left: Math.random() * ($(document).width() - $('#word').width()),
-      });
     });
-  }).fail((e) => {
-    console.log(e.statusText, e.statusCode());
-  })
+  });
 };
 
-const chooseWord = (transcript) => {
-  // Strip out words shorter than two characters
-  let words = [];
-  transcript.split(' ').forEach(function(word) {
-    if (word.length > 2 && word != APP.currentWord) {
-      words.push(word)
-    }
-  });
-
-  // If we have a useful collection of words, choose one randomly
-  if (words.length) {
-    let randomWord = words[Math.floor(Math.random() * words.length)];
-    console.log('Chosen', randomWord);
-    updateWord(randomWord);
+const chooseWord = () => {
+  let word = APP.transcript.split(' ').pop();
+  if (word !== APP.currentWord) {
+    APP.currentWord = word;
+    updateWord(word);
   }
 }
 
@@ -82,11 +62,25 @@ const initSpeechRecognition = () => {
     recognition.start();
 
     recognition.onresult = function(event) {
-      let phrase = "";
-      phrase = event.results[event.resultIndex][0];
-      if (APP.readyForNewWord && phrase.confidence > .5) {
-        chooseWord(phrase.transcript);
+      let interim_transcript = "";
+      for (var i = 0; i < event.results.length; ++i) {
+          interim_transcript += event.results[i][0].transcript;
       }
+
+      // If the transcript actually grew, continue
+      if (APP.transcript.length < interim_transcript.length) {
+        APP.transcript = interim_transcript;
+        let phrase = event.results[event.resultIndex][0];
+        console.log(phrase.transcript, phrase.confidence);
+        if (
+          phrase.confidence > APP.drunkeness
+          && (event.timeStamp - APP.lastTimeStamp) > (APP.newWordFrequency * 1000)
+        ) {
+          APP.lastTimeStamp = event.timeStamp;
+          chooseWord();
+        }
+      }
+
     }
 
 
