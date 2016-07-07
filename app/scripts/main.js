@@ -12,22 +12,26 @@ const waitBeforeNewWord = (freqInSeconds) => {
   }, freqInSeconds * 1000)
 }
 
-const getImageFromAPI = (term) => {
+const updateScreen = (word) => {
+  // Load new image
   $.getJSON('https://pixabay.com/api/',
   {
     key: '2878588-8aa2c9f34d071923f0c6b1582',
-    q: term,
+    q: word,
     per_page: 3,
   },
-  function(data) {
-    const imgUrl = data.hits[0].webformatURL
-    $('body').css('background-image', 'url(' + imgUrl + ')');
-  });
+  (data) =>  {
+    const imgUrl = data.hits[0].webformatURL;
+    // Preload image to avoid slow loading of pics
+    $("#img-preloader").attr('src', imgUrl).on('load', () => {
+      // Load bg
+      $('body').css('background-image', 'url(' + imgUrl + ')');
+      // Load new text
+      $('#word').text(word);
+    });
+  })
 }
 
-const updateScreen = (word) => {
-  $('#word').text(word);
-}
 
 const isConfident = (confidence) => {
   // console.log(transcript);
@@ -53,7 +57,6 @@ const updateWord = (transcript) => {
   // Choose randomly
   let randomWord = words[Math.floor(Math.random() * words.length)];
   APP.currentWord = randomWord;
-  getImageFromAPI(randomWord);
   updateScreen(randomWord);
   waitBeforeNewWord(APP.newWordFrequency);
 }
