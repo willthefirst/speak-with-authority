@@ -1,8 +1,8 @@
 # Speak With Authority
 
-## Getting started
+## Install dependencies and start server
 
 ```
-  npm install
-  gulp serve
+  npm install && bower install && gulp serve
+
 ```
