@@ -2,7 +2,4 @@
 
 ## Install dependencies and start server
 
-```
-  npm install && bower install && gulp serve
-
-```
+```npm install && bower install && gulp serve```

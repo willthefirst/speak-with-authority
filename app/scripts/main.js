@@ -2,13 +2,12 @@
 // protect api key
 // UI controls
 // prompt to allow talking...
-// refactor
 
 let APP = {
   currentWord: "",
-  newWordFrequency: 2, // in seconds
+  newWordFrequency: .8, // in seconds
   lastTimeStamp: 0,
-  drunkeness: .8 // 0-1, reflects confidence of word recognizer
+  accuracy: 0.8 // 0-1, reflects confidence of word recognizer
 }
 
 const updateWord = (word) => {
@@ -17,7 +16,7 @@ const updateWord = (word) => {
   {
     key: '2878588-8aa2c9f34d071923f0c6b1582',
     q: word,
-    per_page: 3,
+    per_page: 5,
   },
   (data) =>  {
     // Break when the API comes back empty
@@ -35,7 +34,7 @@ const updateWord = (word) => {
     });
 
     // Preload image to avoid slow loading of pics
-    const imgUrl = data.hits[0].webformatURL;
+    const imgUrl = data.hits[Math.floor(Math.random() * data.hits.length)].webformatURL;
 
     $("#img-preloader").attr('src', imgUrl).on('load', () => {
       // Load bg
@@ -45,17 +44,22 @@ const updateWord = (word) => {
 };
 
 const chooseWord = (phrase) => {
-  let word = phrase.split(' ').pop();
-  if (word !== APP.currentWord && word.length > 3) {
-    APP.currentWord = word;
-    updateWord(word);
+  let wordArray = phrase.split(' ');
+
+  // Get most recent word that is long enough and not the current.
+  for (var i = wordArray.length - 1; i >= 0; i--) {
+    if (wordArray[i] !== APP.currentWord && wordArray[i].length > 3) {
+      APP.currentWord = wordArray[i];
+      updateWord(wordArray[i]);
+      break;
+    }
   }
 }
 
 const initSpeechRecognition = () => {
   // Check if Speech Recognition API is available
   if (!('webkitSpeechRecognition' in window)) {
-    alert('Your browser does not support speech recognition. I would recommoned using the latest version of Google Chrome.');
+    alert('Your browser does not support speech recognition, which is still a new Web technology. I would recommoned using the latest version of Google Chrome.');
     upgrade();
   } else {
     let recognition = new webkitSpeechRecognition;
@@ -64,14 +68,22 @@ const initSpeechRecognition = () => {
     recognition.lang = 'en-US';
     recognition.start();
 
-    recognition.onresult = function(event) {
+    recognition.onresult = (event) => {
       let phrase = event.results[event.resultIndex][0];
       if (
-        phrase.confidence > APP.drunkeness
+        phrase.confidence > APP.accuracy
         && (event.timeStamp - APP.lastTimeStamp) > (APP.newWordFrequency * 1000)
       ) {
+        console.log(phrase.transcript);
         APP.lastTimeStamp = event.timeStamp;
         chooseWord(phrase.transcript);
+      }
+    }
+
+    recognition.onerror = (event) => {
+      if (event.error === 'no-speech') {
+        alert('Keep talking!');
+        initSpeechRecognition();
       }
     }
   }
